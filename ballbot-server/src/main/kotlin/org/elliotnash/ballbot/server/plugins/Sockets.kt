@@ -5,7 +5,10 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import java.time.Duration
 import io.ktor.server.application.*
-import io.ktor.util.date.*
+import org.elliotnash.ballbot.core.events.EventEncoder
+import org.elliotnash.ballbot.core.events.GamepadRumble
+import org.elliotnash.ballbot.core.events.GamepadUpdate
+import kotlin.time.Duration.Companion.milliseconds
 
 fun Application.configureSockets() {
     install(WebSockets) {
@@ -17,21 +20,17 @@ fun Application.configureSockets() {
 
     routing {
         webSocket("/ws") { // websocketSession
-            var num = 0
-            var firstTime = getTimeMillis()
+            var lastGamepadUpdate: GamepadUpdate? = null
             for (frame in incoming) {
-                if (frame is Frame.Text) {
-                    val text = frame.readText()
-                    if (num == 0) {
-                        firstTime = getTimeMillis()
-                    } else if (num == 250) {
-                        println("Should be one second: ${getTimeMillis()-firstTime}")
-                        num = -1
-                    }
-                    num++
-                    outgoing.send(Frame.Text("YOU SAID: $text"))
-                    if (text.equals("bye", ignoreCase = true)) {
-                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
+                if (frame is Frame.Binary) {
+                    val data = frame.readBytes()
+                    val event = EventEncoder.decode(data)
+                    if (event is GamepadUpdate) {
+                        if (event.buttons[0].pressed && lastGamepadUpdate?.buttons?.get(0)?.pressed == false) {
+                            println("BUTTON PRESSED")
+                            send(EventEncoder.encode(GamepadRumble(0.milliseconds, 200.milliseconds, 1.0, 1.0)))
+                        }
+                        lastGamepadUpdate = event
                     }
                 }
             }

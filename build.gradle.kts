@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.compose").apply(false)
     kotlin("jvm").apply(false)
     id("io.ktor.plugin").apply(false)
+    kotlin("plugin.serialization").apply(false)
 }
 
 repositories {
