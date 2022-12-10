@@ -1,10 +1,9 @@
 package org.elliotnash.ballbot.client
 
 import kotlinx.browser.window
-import org.elliotnash.ballbot.core.events.GamepadRumble
-import org.elliotnash.ballbot.core.events.GamepadUpdate
+import org.elliotnash.ballbot.common.event.GamepadRumble
+import org.elliotnash.ballbot.common.event.GamepadUpdate
 import org.w3c.dom.events.Event
-import kotlin.time.Duration
 
 abstract external class Gamepad {
     val id: String

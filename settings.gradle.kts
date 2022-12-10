@@ -2,9 +2,12 @@
 rootProject.name = "ballbot"
 
 include(
-    "ballbot-core",
+    "ballbot-api",
     "ballbot-client",
-    "ballbot-server"
+    "ballbot-common",
+    "ballbot-robot",
+    "ballbot-server",
+    "ballbot-teensy-connector"
 )
 
 pluginManagement {

@@ -21,7 +21,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty-jvm:${project.parent!!.extra["ktor.version"]}")
     implementation("ch.qos.logback:logback-classic:1.4.4")
 
-    implementation(project(":ballbot-core"))
+    api(project(":ballbot-common"))
 
     testImplementation("io.ktor:ktor-server-tests-jvm:${project.parent!!.extra["ktor.version"]}")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:${project.parent!!.extra["kotlin.version"]}")

@@ -3,49 +3,56 @@ package org.elliotnash.ballbot.client
 import androidx.compose.runtime.*
 import androidx.compose.web.events.SyntheticMouseEvent
 import kotlinx.coroutines.*
-import org.elliotnash.ballbot.core.events.EventEncoder
-import org.elliotnash.ballbot.core.events.GamepadRumble
+import org.elliotnash.ballbot.common.event.*
 import org.jetbrains.compose.web.ExperimentalComposeWebSvgApi
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 import org.jetbrains.compose.web.renderComposable
 import org.jetbrains.compose.web.svg.*
 import org.khronos.webgl.ArrayBuffer
-import org.khronos.webgl.Int8Array
-import org.khronos.webgl.Uint8Array
-import org.khronos.webgl.get
 import org.w3c.dom.WebSocket
 import org.w3c.files.Blob
 import org.w3c.files.FileReader
 import kotlin.time.Duration.Companion.milliseconds
 
-val LOOP_INTERVAL = 4.milliseconds
-
 var gamepad by mutableStateOf<GenericGamepad?>(null)
 
-val socket = WebSocket("ws://localhost:8080/ws").apply {
+val socket = WebSocket("ws://localhost:8080/networkentries").apply {
     onmessage = {
         //val event = EventEncoder.decode((it.data as Blob))
         val reader = FileReader()
         reader.readAsArrayBuffer(it.data as Blob)
         reader.onloadend = {
             val data = (reader.result as ArrayBuffer).asByteArray()
-            val event = EventEncoder.decode(data)
-            if (event is GamepadRumble) {
-                gamepad?.vibrate(event)
-            }
-            Unit
+            handleEntry(data.decodeNetworkEntry())
         }
+        Unit
+    }
+    onclose = {
+        println("Websocket closed, cancelling event loop")
+        eventLoopJob?.cancel()
+        eventLoopJob = null
         Unit
     }
 }
 
+fun handleEntry(entry: NetworkEntry) {
+    if (entry is ClientConfiguration) {
+        println("We got client config: $entry")
+        eventLoopJob = setInterval(entry.periodicInterval, ::eventLoop)
+    }
+    if (entry is GamepadRumble) {
+        gamepad?.vibrate(entry)
+    }
+}
+
+var eventLoopJob: Job? = null
 fun eventLoop() {
     GamepadManager.updateGamepads()
     gamepad = if (GamepadManager.gamepads.isNotEmpty()) {
         val gamepad = GamepadManager.gamepads[0]
         if (socket.readyState == 1.toShort()) {
-            val data = EventEncoder.encode(gamepad.getUpdate())
+            val data = gamepad.getUpdate().encode()
             socket.send(data.asInt8Array())
         }
         gamepad
@@ -55,7 +62,6 @@ fun eventLoop() {
 }
 
 fun main() {
-    setInterval(LOOP_INTERVAL, ::eventLoop)
     renderComposable(rootElementId = "root") {
         Div {
             if (gamepad != null) {

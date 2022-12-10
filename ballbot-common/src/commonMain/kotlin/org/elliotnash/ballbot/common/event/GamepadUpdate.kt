@@ -1,4 +1,4 @@
-package org.elliotnash.ballbot.core.events
+package org.elliotnash.ballbot.common.event
 
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
@@ -8,7 +8,7 @@ data class GamepadUpdate(
     val id: String,
     val axes: Array<Double>,
     val buttons: Array<ButtonUpdate>
-) : Event {
+) : NetworkEntry() {
     @Serializable
     data class ButtonUpdate (
         val pressed: Boolean,
@@ -43,4 +43,4 @@ data class GamepadRumble(
     val duration: Duration,
     val weakMagnitude: Double,
     val strongMagnitude: Double
-) : Event
+) : NetworkEntry()

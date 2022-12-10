@@ -29,7 +29,7 @@ kotlin {
                 implementation(compose.web.core)
                 implementation(compose.web.svg)
 
-                implementation(project(":ballbot-core"))
+                implementation(project(":ballbot-common"))
             }
         }
         val jsTest by getting {
