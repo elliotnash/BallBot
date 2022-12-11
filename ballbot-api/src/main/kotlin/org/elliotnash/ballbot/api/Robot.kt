@@ -16,6 +16,8 @@ abstract class Robot(
 ) {
     internal var server: Server = Server(clientPeriodic)
     internal var teensy: TeensyConnection = TeensyConnection(teensyPort)
+    var enabled = false
+        private set
     fun start() {
         Runtime.getRuntime().addShutdownHook(Thread {
             logger.info {"Stopping robot services"}
@@ -29,13 +31,18 @@ abstract class Robot(
             init()
             fixedRateTimer(period = serverPeriodic.inWholeMilliseconds) {
                 // Event loop
-                periodic()
+                if (enabled) {
+                    enabledPeriodic()
+                } else {
+                    disabledPeriodic()
+                }
             }
         }
     }
-    abstract fun init()
-    abstract fun enabled()
-    abstract fun disabled()
-    abstract fun shutdown()
-    abstract fun periodic()
+    open fun init() {}
+    open fun enabled() {}
+    open fun disabled() {}
+    open fun shutdown() {}
+    open fun disabledPeriodic() {}
+    open fun enabledPeriodic() {}
 }

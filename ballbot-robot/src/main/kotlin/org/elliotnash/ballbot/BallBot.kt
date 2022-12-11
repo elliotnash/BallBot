@@ -17,13 +17,16 @@ class BallBot : Robot(
     override fun enabled() {
     }
 
+    override fun enabledPeriodic() {
+    }
+
     override fun disabled() {
     }
 
-    override fun shutdown() {
+    override fun disabledPeriodic() {
     }
 
-    override fun periodic() {
+    override fun shutdown() {
     }
 }
 
