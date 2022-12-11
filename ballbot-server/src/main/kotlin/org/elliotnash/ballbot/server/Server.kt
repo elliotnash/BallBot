@@ -11,11 +11,10 @@ class Server(
     var isStarted = false
     val networkEntryServer = NetworkEntryServer(this, clientPeriodic)
     fun start() {
-        var test = embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = {
+        embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = {
             configureRouting()
             networkEntryServer.configure(this)
         }).start(wait = false)
-        println("STARTED")
         isStarted = true
     }
 }

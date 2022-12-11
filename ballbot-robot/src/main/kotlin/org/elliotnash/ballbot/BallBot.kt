@@ -1,14 +1,17 @@
 package org.elliotnash.ballbot
 
+import mu.KotlinLogging
 import org.elliotnash.ballbot.api.Robot
 import kotlin.time.Duration.Companion.milliseconds
 
-class Ballbot : Robot(
-    serverPeriodic = 4.milliseconds,
-    arduinoPort = "/dev/cu.usbmodem79891201"
+private val logger = KotlinLogging.logger {}
+
+class BallBot : Robot(
+    serverPeriodic = 500.milliseconds,
+    teensyPort = "/dev/cu.usbmodem79891201"
 ) {
     override fun init() {
-        println("Robot initialized")
+        logger.info {"Robot initialized"}
     }
 
     override fun enabled() {
@@ -17,11 +20,14 @@ class Ballbot : Robot(
     override fun disabled() {
     }
 
+    override fun shutdown() {
+    }
+
     override fun periodic() {
-//        println("Periodic called")
     }
 }
 
 fun main(args: Array<String>) {
-    Ballbot().start()
+    logger.info {"starting ballbot"}
+    BallBot().start()
 }

@@ -19,7 +19,6 @@ dependencies {
     implementation("io.ktor:ktor-server-core-jvm:${project.parent!!.extra["ktor.version"]}")
     implementation("io.ktor:ktor-server-websockets-jvm:${project.parent!!.extra["ktor.version"]}")
     implementation("io.ktor:ktor-server-netty-jvm:${project.parent!!.extra["ktor.version"]}")
-    implementation("ch.qos.logback:logback-classic:1.4.4")
 
     api(project(":ballbot-common"))
 
