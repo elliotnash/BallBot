@@ -4,8 +4,10 @@ import kotlinx.coroutines.*
 import mu.KotlinLogging
 import org.elliotnash.ballbot.connector.TeensyConnection
 import org.elliotnash.ballbot.server.Server
+import java.util.Timer
 import kotlin.concurrent.fixedRateTimer
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 private val logger = KotlinLogging.logger {}
 
@@ -16,8 +18,10 @@ abstract class Robot(
 ) {
     internal var server: Server = Server(clientPeriodic)
     internal var teensy: TeensyConnection = TeensyConnection(teensyPort)
-    var enabled = false
-        private set
+
+    private var lastEnabled = false
+    val isEnabled
+        get() = server.state.enabled
     fun start() {
         Runtime.getRuntime().addShutdownHook(Thread {
             logger.info {"Stopping robot services"}
@@ -27,11 +31,34 @@ abstract class Robot(
             teensy.start(this)
             server.start()
 
-            // robot initialized
+            // Robot initialized.
+            logger.info {"Robot services initialized"}
+
+            // Create led timer.
+            var ledTimer: Timer? = null
+
             init()
             fixedRateTimer(period = serverPeriodic.inWholeMilliseconds) {
+                if (isEnabled != lastEnabled) {
+                    if (isEnabled) {
+                        logger.info {"Robot enabling"}
+                        enabled()
+                        ledTimer = fixedRateTimer(period = 500) {
+                            teensy.toggleLed()
+                        }
+                    } else {
+                        logger.info {"Robot disabling"}
+                        try {
+                            disabled()
+                        } finally {
+                            ledTimer?.cancel()
+                            teensy.setLed(true)
+                        }
+                    }
+                    lastEnabled = isEnabled
+                }
                 // Event loop
-                if (enabled) {
+                if (isEnabled) {
                     enabledPeriodic()
                 } else {
                     disabledPeriodic()

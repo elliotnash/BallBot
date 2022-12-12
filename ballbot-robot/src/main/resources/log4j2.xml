@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
     <Properties>
-        <Property name="log4j.level" value="TRACE" />
+        <Property name="log4j.level" value="DEBUG" />
     </Properties>
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">

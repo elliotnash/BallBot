@@ -15,7 +15,7 @@ import org.w3c.files.Blob
 import org.w3c.files.FileReader
 import kotlin.time.Duration.Companion.milliseconds
 
-var gamepad by mutableStateOf<GenericGamepad?>(null)
+// TODO fix this mess
 
 val socket = WebSocket("ws://localhost:8080/networkentries").apply {
     onmessage = {
@@ -36,24 +36,37 @@ val socket = WebSocket("ws://localhost:8080/networkentries").apply {
     }
 }
 
+fun WebSocket.send(entry: NetworkEntry) {
+    send(entry.encode().asInt8Array())
+}
+
+class ClientState {
+    var enabled by mutableStateOf(false)
+    var gamepad by mutableStateOf<GenericGamepad?>(null)
+}
+
+val state = ClientState()
+
 fun handleEntry(entry: NetworkEntry) {
     if (entry is ClientConfiguration) {
         println("We got client config: $entry")
         eventLoopJob = setInterval(entry.periodicInterval, ::eventLoop)
     }
     if (entry is GamepadRumble) {
-        gamepad?.vibrate(entry)
+        state.gamepad?.vibrate(entry)
+    }
+    if (entry is EnableEntry) {
+        state.enabled = entry.enabled
     }
 }
 
 var eventLoopJob: Job? = null
 fun eventLoop() {
     GamepadManager.updateGamepads()
-    gamepad = if (GamepadManager.gamepads.isNotEmpty()) {
+    state.gamepad = if (GamepadManager.gamepads.isNotEmpty()) {
         val gamepad = GamepadManager.gamepads[0]
         if (socket.readyState == 1.toShort()) {
-            val data = gamepad.getUpdate().encode()
-            socket.send(data.asInt8Array())
+            socket.send(gamepad.getUpdate())
         }
         gamepad
     } else {
@@ -64,23 +77,27 @@ fun eventLoop() {
 fun main() {
     renderComposable(rootElementId = "root") {
         Div {
-            if (gamepad != null) {
-                Text("Gamepad connected: ${gamepad!!.id}")
+            if (state.gamepad != null) {
+                Text("Gamepad connected: ${state.gamepad!!.id}")
                 Br(); Br()
                 Div(attrs = {
                     style {
                         display(DisplayStyle.Flex)
                     }
                 }) {
-                    JoystickPreview(gamepad!!.axes[0], gamepad!!.axes[1])
+                    JoystickPreview(state.gamepad!!.axes[0], state.gamepad!!.axes[1])
                     Div(attrs = { style { width(10.px); display(DisplayStyle.InlineBlock) } })
-                    JoystickPreview(gamepad!!.axes[2], gamepad!!.axes[3])
+                    JoystickPreview(state.gamepad!!.axes[2], state.gamepad!!.axes[3])
                 }
                 Br()
-                CoolButton( onClick = {
-                    GamepadManager.gamepads[0].vibrate(GamepadRumble(0.milliseconds, 200.milliseconds, 1.0, 1.0))
-                }) {
-                    Text("rumble")
+                CoolButton(
+                    onClick = {
+                        // GamepadManager.gamepads[0].vibrate(GamepadRumble(0.milliseconds, 200.milliseconds, 1.0, 1.0))
+                        socket.send(EnableEntry(!state.enabled))
+                    },
+                    color = if (state.enabled) {Color("green")} else {Color("red")}
+                ) {
+                    Text(if (state.enabled) {"Disable"} else {"Enable"})
                 }
             } else {
                 Text("No gamepads connected! Please connect one and press any joystick button.")
@@ -135,6 +152,7 @@ fun JoystickPreview(
 @Composable
 fun CoolButton(
     onClick: ((SyntheticMouseEvent) -> Unit)? = null,
+    color: CSSColorValue = Color("#888888"),
     content: (@Composable () -> Unit)? = null
 ) {
     Button(attrs = {
@@ -143,6 +161,9 @@ fun CoolButton(
         }
         style {
             border { style = LineStyle.None }
+            padding(6.px)
+            borderRadius(8.px)
+            backgroundColor(color)
         }
     }) {
         content?.invoke()

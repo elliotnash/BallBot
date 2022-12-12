@@ -7,7 +7,7 @@ import kotlin.time.Duration.Companion.milliseconds
 private val logger = KotlinLogging.logger {}
 
 class BallBot : Robot(
-    serverPeriodic = 500.milliseconds,
+    serverPeriodic = 4.milliseconds,
     teensyPort = "/dev/cu.usbmodem79891201"
 ) {
     override fun init() {

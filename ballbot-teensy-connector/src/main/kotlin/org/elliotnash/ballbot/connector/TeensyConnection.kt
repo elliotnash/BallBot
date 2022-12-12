@@ -7,7 +7,6 @@ import mu.KotlinLogging
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import java.io.ByteArrayInputStream
-import java.util.HexFormat
 
 const val END = 0x00
 const val READY = 0x01
@@ -57,7 +56,7 @@ class TeensyConnection(
             readLoop()
         }
 
-        // set led on so we know we've connected
+        // Set led on so we know we've connected.
         setLed(true)
     }
 
@@ -67,6 +66,7 @@ class TeensyConnection(
             val eventData = ByteArray(1)
             serial.readBytes(eventData, 1)
             when (eventData.first().toInt()) {
+                // TODO Consider adding ready event here
                 FUNCTION_HEADER -> {
                     val funcLen = serial.inputStream.read()
                     val funcName = String(serial.inputStream.readNBytes(funcLen))
@@ -74,7 +74,7 @@ class TeensyConnection(
                     val data = serial.inputStream.readNBytes(dataLen)
                     serial.inputStream.read()
 
-                    // TODO add function registry
+                    // TODO Add function registry
                     when (funcName) {
                         "log" -> log(data.inputStream())
                     }
@@ -86,7 +86,7 @@ class TeensyConnection(
 
                 }
                 else -> {
-                    logger.warn {"Received invalid serial event."}
+                    logger.warn {"Received invalid serial event"}
                 }
             }
         }
@@ -96,10 +96,15 @@ class TeensyConnection(
         call("set_led", byteArrayOf(on.toByte()))
     }
 
+    fun toggleLed() {
+        call("set_led", byteArrayOf())
+    }
+
     private fun reset() {
         call("reset", byteArrayOf())
     }
 
+    //TODO make function suspend
     private fun call(function: String, data: ByteArray) {
         if (serial.isOpen) {
             serial.outputStream.write(FUNCTION_HEADER)

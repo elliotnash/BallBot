@@ -29,6 +29,7 @@ object NetworkEntryEncoder {
     // Register your event serializables here!
     init {
         ClientConfiguration::class.register()
+        EnableEntry::class.register()
         GamepadUpdate::class.register()
         GamepadRumble::class.register()
     }
@@ -42,7 +43,6 @@ object NetworkEntryEncoder {
         }
     }
     fun encode(networkEntry: NetworkEntry): ByteArray {
-        println(protobuf.serializersModule)
         return protobuf.encodeToByteArray(PolymorphicSerializer(NetworkEntry::class), networkEntry)
     }
     fun decode(data: ByteArray): NetworkEntry {

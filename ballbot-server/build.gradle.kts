@@ -19,6 +19,7 @@ dependencies {
     implementation("io.ktor:ktor-server-core-jvm:${project.parent!!.extra["ktor.version"]}")
     implementation("io.ktor:ktor-server-websockets-jvm:${project.parent!!.extra["ktor.version"]}")
     implementation("io.ktor:ktor-server-netty-jvm:${project.parent!!.extra["ktor.version"]}")
+    implementation("io.github.microutils:kotlin-logging-jvm:3.0.4")
 
     api(project(":ballbot-common"))
 

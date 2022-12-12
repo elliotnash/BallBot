@@ -4,11 +4,19 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import mu.KotlinLogging
 import org.elliotnash.ballbot.common.event.*
 import java.time.Duration
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
+
+private val logger = KotlinLogging.logger {}
+
+//TODO move this
+suspend fun WebSocketSession.send(entry: NetworkEntry) {
+    send(entry.encode())
+}
 
 class NetworkEntryServer(
     private val server: Server,
@@ -21,6 +29,7 @@ class NetworkEntryServer(
         val id = lastId.getAndIncrement()
     }
     private val connections = Collections.synchronizedCollection<Connection>(LinkedHashSet())
+    private var activeConnection: Connection? = null
     fun configure(application: Application) {
         application.apply {
             install(WebSockets) {
@@ -40,26 +49,55 @@ class NetworkEntryServer(
                         // send configuration to client
                         send(ClientConfiguration(clientPeriodic).encode())
 
-                        var lastGamepadUpdate: GamepadUpdate? = null
                         for (frame in incoming) {
                             if (frame is Frame.Binary) {
                                 try {
                                     val event = frame.readBytes().decodeNetworkEntry()
-                                    if (event is GamepadUpdate) {
-                                        if (event.buttons[0].pressed && lastGamepadUpdate?.buttons?.get(0)?.pressed == false) {
-                                            println("BUTTON PRESSED")
-                                            send(GamepadRumble(0.milliseconds, 200.milliseconds, 1.0, 1.0).encode())
+                                    if (event is EnableEntry) {
+                                        if (event.enabled) {
+                                            if (!server.state.enabled) {
+                                                logger.debug {"Received enable event"}
+                                                activeConnection = connection
+                                                server.state.enabled = true
+                                                send(EnableEntry(true))
+                                            } else {
+                                                // TODO send feedback that we're already enabled
+                                                logger.info {"Received enable event, but already enabled!"}
+                                            }
+                                        } else {
+                                            if (connection == activeConnection) {
+                                                logger.debug {"Received disable event."}
+                                                activeConnection = null
+                                                server.state.enabled = false
+                                                send(EnableEntry(false))
+                                            } else {
+                                                // TODO send feedback that only the active connection can disable
+                                                logger.debug {"Received disable event, but client is not active"}
+                                            }
                                         }
-                                        lastGamepadUpdate = event
+                                    }
+                                    if (connection == activeConnection) {
+                                        if (event is GamepadUpdate) {
+                                            logger.trace {"Received gamepad update event: $event"}
+//                                            if (event.buttons[0].pressed && server.state.gamepad?.buttons?.get(0)?.pressed == false) {
+//                                                println("BUTTON PRESSED")
+//                                                send(GamepadRumble(0.milliseconds, 200.milliseconds, 1.0, 1.0))
+//                                            }
+                                            server.state.gamepad = event
+                                        }
                                     }
                                 } catch (e: Exception) {
-                                    println(e.localizedMessage)
+                                    logger.error {e}
                                 }
                             }
                         }
                     } catch (e: Exception) {
-                        println(e.localizedMessage)
+                        logger.error {e}
                     } finally {
+                        // disable robot if active connection disconnects
+                        if (connection == activeConnection) {
+                            server.state.enabled = false
+                        }
                         connections -= connection
                     }
                 }
